@@ -671,9 +671,6 @@ function get_context()
             $user_agent = CARRIER_ID;
     }
 
-    //リンクチェックのアクセスログをACCESS_LOGテーブルに登録させないための文字列をUAに追加
-    $user_agent .= " URLMonitor_UcR8sjhSJ34B4VmiJWUhjuYRHmxj8bKZ";
-
     $header =
         "Accept-language: jp\n" .
         "User-Agent: {$user_agent}\n";
