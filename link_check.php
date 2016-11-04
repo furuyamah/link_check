@@ -33,7 +33,7 @@ define('MAX_DEPTH', 3);
 //HTTPSのみを許容するか？
 define('IS_HTTPS_ONLY', true);
 
-//20xレスポンスのみ許容するか？
+//20xレスポンスのみ許容するか？                                          k
 define('IS_20X_ONLY', true);
 
 //タイムアウト値(秒)
