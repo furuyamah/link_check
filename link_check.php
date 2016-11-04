@@ -30,6 +30,13 @@ define("EXCLUDE_CHILD_URL_QUERYS", serialize(array("t", "nl", "ccd", "back_url",
 //チェックする最大階層の深さ
 define('MAX_DEPTH', 1);
 
+//HTTPSのみを許容するか？
+define('IS_HTTPS_ONLY', true);
+
+//20xレスポンスのみ許容するか？
+define('IS_20X_ONLY', true);
+
+
 //レポートメールを送信するアドレス
 //define("REPORT_TO", "report_to@hogehogehoge.com");
 //レポートメールの送信元アドレス
