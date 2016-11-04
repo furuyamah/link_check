@@ -28,13 +28,16 @@ define("EXCLUDE_CHILD_URLS", serialize($exclude_urls));
 define("EXCLUDE_CHILD_URL_QUERYS", serialize(array("t", "nl", "ccd", "back_url", "pr","ret")));
 
 //チェックする最大階層の深さ
-define('MAX_DEPTH', 1);
+define('MAX_DEPTH', 3);
 
 //HTTPSのみを許容するか？
 define('IS_HTTPS_ONLY', true);
 
 //20xレスポンスのみ許容するか？
 define('IS_20X_ONLY', true);
+
+//タイムアウト値(秒)
+define('TIMEOUT_SEC',4);
 
 
 //レポートメールを送信するアドレス
@@ -46,6 +49,14 @@ define('IS_20X_ONLY', true);
 
 //パラメータチェック
 $target_url = process_argv($argv);
+
+stream_context_set_default(array(
+    'http' => array(
+        'timeout' => TIMEOUT_SEC
+    )
+));
+date_default_timezone_set('Asia/Tokyo');
+
 
 $message = check_links($target_url);
 if ($message) {
@@ -72,15 +83,15 @@ function process_argv($argv)
     if (count($argv) < 3) {
         echo "\nUsage\n";
         echo "link_check.php [target url] [user agent]\n";
-        echo "[user agent] s: Android / a: iPhone / i: Docomo FP / e: AU FP / y: SoftBank FP\n\n";
+        echo "[user agent] s: Android / a: iPhone / i: Docomo FP / e: AU FP / y: SoftBank FP / pc: PC(firefox)\n\n";
         exit;
     }
 
     $target_url = $argv[1];
-    if (strpos($target_url, "http", 0) !== 0) {
-        echo "target url is must be [http://...]\n";
-        exit;
-    }
+//    if (strpos($target_url, "http", 0) !== 0) {
+//        echo "target url is must be [http://...]\n";
+//        exit;
+//    }
     if (exists_url($target_url) !== TRUE) {
         echo "Can't access target url.\n";
         exit;
@@ -125,6 +136,9 @@ function put_report($target_url, $message)
             break;
         case "y":
             $user_agent = "SoftBank ガラケー";
+            break;
+        case "pc":
+            $user_agent = "PC(firefox)";
             break;
         default:
             $user_agent = CARRIER_ID;
@@ -626,15 +640,53 @@ function rlog($str)
  */
 function exists_url($url)
 {
+
+    if(https_contents_check($url) !== true){
+        rlog($url);
+        rlog("NOT HTTPS CONTENTS.");
+        return "NOT HTTPS CONTENTS.";
+    }
+
     $headers = @get_headers($url);
 
-    if (preg_match('/[2-3][0-9]{2}/', $headers[0])) {
+    if (IS_20X_ONLY) {
+        //2xxの場合のみtrue
+        $matches = '/2[0-9]{2}/';
+    } else {
         //2xx,3xxの場合のみtrue
+        $matches = '/[2-3][0-9]{2}/';
+    }
+
+    if (preg_match($matches, $headers[0])) {
         return TRUE;
     }
     rlog($url);
     rlog($headers[0]);
     return $headers[0];
+}
+
+/**
+ * js,css,画像などhttpsの時、httpsで読み込まれなければならないものがhttpsかどうかチェックする
+ * @param $url
+ * @return bool
+ */
+function https_contents_check($url)
+{
+    if (!IS_HTTPS_ONLY) {
+        return true;
+    }
+
+    $path = parse_url($url, PHP_URL_PATH);
+    $path_parts = pathinfo($path);
+    if (!preg_match('/js$|css$|png$|jpeg$|jpg$|gif$/i', $path_parts['extension'])) {
+        return true;
+    }
+
+    if (strpos($url, "https:", 0) !== 0) {
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -672,6 +724,9 @@ function get_context()
             $added_header =
                 "x-jphone-msname :945SH\n" .
                 "x-jphone-uid: 2OTl2mqbiYIJ3FL";
+            break;
+        case "pc":
+            $user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.11; rv:49.0) Gecko/20100101 Firefox/49.0";
             break;
         default:
             //どれにも該当しなければ、それそのものがユーザーエージェント。
